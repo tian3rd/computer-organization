@@ -31,23 +31,24 @@ main:
 
   @ TODO
   @ ex4. bit vectors
-  @ comment starts here for ex4
-cope:
-  .ascii "COPE"
-  @ because r1 is a 32-bit register, so after loading, there're 4 bytes in r1
-  @ view disassembly for the following (it is transformed into ldr.w	r1, [pc, #-8])
-  ldr r1, cope
-  @ change 'C' to 'H' by adding 5
-  add r2, r1, #5
-  @ if a is 0 or 1, then a xor 0 == a; a xor 1 == not a
-  eor r3, r2, #0x16000000
-loop:
-  @ just add some instructions here for better observations of registers
-  movs r0, #1
-  adds r0, #2
-  @ comment ends here for ex4
-  nop
-  b loop
+@   @ comment starts here for ex4
+@ cope:
+@   .ascii "COPE"
+@   @ because r1 is a 32-bit register, so after loading, there're 4 bytes in r1
+@   @ view disassembly for the following (it is transformed into ldr.w	r1, [pc, #-8])
+@   ldr r1, cope
+@   @ change 'C' to 'H' by adding 5
+@   add r2, r1, #5
+@   @ if a is 0 or 1, then a xor 0 == a; a xor 1 == not a
+@   @ use 12 digit immediate constant: refer to https://alisdair.mcdiarmid.org/arm-immediate-value-encoding/
+@   eor r2, r2, #0x16000000
+@ loop:
+@   @ just add some instructions here for better observations of registers
+@   movs r0, #1
+@   adds r0, #2
+@   nop
+@   b loop
+@   @ comment ends here for ex4
   nop
   b main
 
