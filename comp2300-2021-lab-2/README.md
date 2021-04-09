@@ -57,6 +57,8 @@
 8. What's the difference between `.hword` and `.ascii` directives?
    1. `.ascii` directive stores the text into the progeam using ASCII encoding instead of hex number in `.hword` directive;
    2. Another difference is that `.hword` stores the normally using the little endian, e.g. `.hword 0xbe4a` will store `4a` first in lower address, then `be` in higher address. But `.ascii` stores text in another way, i.e. `.ascii "COPE"` stores hex value of `C` (`43`) first in lower address, then `O` (`4f`), then `P` (`50`), then `E` (`45`) at last. So when you load it to a register, the register will read as `45504f43`, while in contrast, the register will read as `be4a` for `.hword`.
+9. In debugging mode, why does the disasembler view not updated sometimes?
+   1. It may be a debugger bug where the debugger uses old results even when you change the program and starting a new debug session. Try reloading the window by `shift+cmd+P` and search for `developer: reload window`.
 
 ## Great reading materials for ARM immediate value encoding
 
