@@ -14,6 +14,9 @@
 
    Take 4-bit system as an example. A greate reference here: [stackoverflow](https://d.pr/r0E3Sm)
 
+   ![CPU Clock](https://i.stack.imgur.com/6yNJY.gif)
+   ![CPU Clock-anit](https://i.stack.imgur.com/j0lcP.gif)
+
    1. Negative (N) set when: e.g. `movs r0, #0b1100`
    2. Zero (Z) set when:
    3. Carry/Borrow set when:
