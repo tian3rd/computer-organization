@@ -35,6 +35,9 @@ main:
 @ end:
 @   nop
 @   b end
+@   nop
+@   b main
+@ .size main, .-main
 @   @ ex1 ends here
   
   @ ex2. turning amrks into grades
@@ -108,6 +111,9 @@ main:
 @ end:
 @   nop
 @   b end
+@   nop
+@   b main
+@ .size main, .-main
 @   @ ex2 ends here
 
   @ ex3. putting it together
@@ -185,7 +191,9 @@ main:
 @   nop
 @   b end
 @   @ ex3 ends here
-  nop
+@   nop
+@   b main
+@ .size main, .-main
   
   @ ex4. recursive functions
 @   @ ex4 starts here
@@ -212,6 +220,9 @@ main:
 @ end:
 @   nop
 @   b end
+@   nop
+@   b main
+@ .size main, .-main
 @   @ ex4 ends here
 
   @ ex5. time to cheat
@@ -312,7 +323,96 @@ main:
 @   nop
 @   b end
 
+@   nop
+@   b main
+@ .size main, .-main
+
 @ @ ex5 ends here
 
+  @ ex6. arrrays as arguments
+  @ ex6 starts here
+  @ 6.1 snippet
+@   ldr r0, =main
+@   ldr r1, =storage
+
+@ .data
+@ storage:
+@   .word 2, 3, 4, 5
+@   .asciz "Computer Organization & Program Execution"
+  
+  @ 6.2 array
+  @ load student results into the register
+  ldr r0, =results
+  bl calculate_lab_grades
+  nop
   b main
-.size main, .-main
+
+@ input: r0 address of start of mark array with format, .word size of arry; .word a1, a2, final, 0
+@ output: .word a1, a2, final, grade(hex)
+calculate_lab_grades:
+  str lr, [sp, #-4]!
+  ldr r1, [r0]
+  
+calculate_mark:
+  add r0, #4
+  ldr r2, [r0]
+  asr r2, #2
+
+  add r0, #4
+  ldr r3, [r0]
+  add r2, r2, r3, asr #2
+
+  add r0, #4
+  ldr r3, [r0]
+  add r2, r2, r3, asr #1
+
+  bl calculate_grade_recursive
+
+  add r0, #4
+  str r2, [r0]
+
+  sub r1, #1
+  cmps r1, #0
+  bgt calculate_mark
+  ble end_mark
+end_mark:
+  ldr lr, [sp], #4
+  bx lr
+
+@ input: r2 final mark
+@ result: r2 grade(hex)
+calculate_grade_recursive:
+  str lr, [sp, #-4]!
+  cmps r2, #50
+  blt base_grade
+  sub r2, #10
+  bl calculate_grade_recursive
+  sub r2, #1
+  b end_grade
+base_grade:
+  mov r2, #0xF
+end_grade:
+  ldr lr, [sp], #4
+  bx lr
+
+.data
+results:
+  @ length of array / number of students
+  .word 6
+  @ student 1
+  .word 50, 50, 40, 0
+  @ s2
+  .word 77, 80, 63, 0
+  @ s3
+  .word 40, 50, 60, 0
+  @ s4
+  .word 80, 82, 89, 0
+  @ s5
+  .word 80, 85, 77, 0
+  @ s6
+  .word 91, 90, 95, 0
+  
+  @ nop
+  @ b main
+  @ ex6 ends here
+
