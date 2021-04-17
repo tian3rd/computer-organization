@@ -26,4 +26,11 @@
 
 3. Search why 'suffix on cmparison instruction is deprecated' (propmted by `cmps r0, 80`?
 
-4.
+4. Sections in the program are _directives_ (starting with a `.`) to the assembler that different parts of the program should go in different parts of the discoboard's membory space. Some parts of this address space are for instructions which the discoboard will execute, but other parts contain _data_ that your program can use. ![Address Space](https://cdn-std.droplr.net/files/acc_498334/QclpZ0)
+
+   - What is a `.text` section and what does it do?
+   - What about `.data`?
+   - A. Anything after a `.text` (until the next secton) will appear as program code for your discoboard to excute; anything after `.data` section will be put in RAM as membory that your program can use to read/write data your program needs to do useful things.
+   - When creating a new `main.S` file, any instructions are put in the `.text` section until the assembler sees a new section directive.
+
+5. to be continued...
