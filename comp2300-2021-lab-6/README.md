@@ -32,4 +32,34 @@
       Constants of the form 0xXYXYXYXY
       Bits[11:8] of imm12 are set to 0b0011, and bits[7:0] are set to 0xXY. This form is UNPREDICTABLE ifbits[7:0] == 0x00.
    2. ARM rules see link attached in lab2.
-6.
+6. How to branch and link under certain condition, e.g., if `r0>0` then `bl` to `label1`, else just carry on?
+
+   1. Use `IT` block:
+   2. ```assembly
+        cmp r0, 0
+        IT ge
+        blge label1
+        @ else stuff here, next todos
+      label1:
+      @ when r0>0, do stuff here, the position of label1 doesn't matter
+      bx lr
+      ```
+   3. Alternatively, just use a label:
+   4. ```assembly
+      label1:
+        @ when r0>0, do stuff here.
+        b next_step
+
+        @ ...other stuff in between
+
+        cmp r0, 0
+        bge label1
+      next_step:  @ if label1 is before the cmp, you have to set a label here
+        @ next todos
+      ```
+
+7. `fp` is a frame pointer pointing the start of the instructions, fixed; while `sp` stack pointer is changing all the time, e.g. allocating new varibles by decrementing (for negatively growing stack).
+
+## Useful link
+
+[Compiler Explorer](https://godbolt.org) to translate higher level code to assembly code.
