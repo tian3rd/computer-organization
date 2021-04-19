@@ -190,57 +190,219 @@ main:
 @   @ ex4 ends here
 
   @ ex6. FizzBlink
-  @ ex6 starts here 
-  mov r0, #0
-  mov r1, #3
-  mov r2, #5
-  mov r3, #15
+@   @ ex6 starts here 
+@   mov r0, #0
+@   mov r1, #3
+@   mov r2, #5
+@   mov r3, #15
 
-fizzblink:
-  str lr, [sp, #-4]!
-fizzblink_loop:
-  add r0, #1
-  sub r1, #1
-  sub r2, #1
-  sub r3, #1
-checkfizz_redgreen:
-  cmps r3, #0
-  beq redgreen_blink
-checkfizzred:
-  cmps r1, #0
-  beq red_blink
-checkfizzgreen:
-  cmps r2, #0
-  beq green_blink
-check_outofrange:
-  cmps r0, #100
-  bge end_fizzblink
-  blt fizzblink_loop
+@ fizzblink:
+@   str lr, [sp, #-4]!
+@ fizzblink_loop:
+@   add r0, #1
+@   sub r1, #1
+@   sub r2, #1
+@   sub r3, #1
+@ checkfizz_redgreen:
+@   cmps r3, #0
+@   beq redgreen_blink
+@ checkfizzred:
+@   cmps r1, #0
+@   beq red_blink
+@ checkfizzgreen:
+@   cmps r2, #0
+@   beq green_blink
+@ check_outofrange:
+@   cmps r0, #100
+@   bge end_fizzblink
+@   blt fizzblink_loop
 
-end_fizzblink:
-  nop 
-  b end_fizzblink
+@ end_fizzblink:
+@   nop 
+@   b end_fizzblink
 
-redgreen_blink:
+@ redgreen_blink:
+@   bl red_on
+@   bl green_on
+@   bl delay
+@   bl red_off
+@   bl green_off
+@   mov r3, #15
+@   b checkfizzred
+
+@ red_blink: 
+@   @ str lr, [sp, #-4]!
+@   bl red_on
+@   bl delay
+@   bl red_off
+@   mov r1, #3
+@   @ ldr lr, [sp], #4
+@   b checkfizzgreen
+
+@ red_on:
+@   stmdb sp!, {r0-r4, lr}
+@   ldr r0, =#0x40021000
+@   mov r1, #0x4c
+@   mov r2, #1
+@   bl set_bit
+@   ldr r0, =#0x48000400
+@   mov r1, #0x0
+@   mov r2, #4
+@   bl set_bit
+@   mov r2, #5
+@   bl clear_bit
+@   mov r1, #0x14
+@   mov r2, #2
+@   bl set_bit
+@   ldmia sp!, {r0-r4, lr}
+@   bx lr
+
+@ red_off:
+@   stmdb sp!, {r0-r4, lr}
+@   @ simplified to just clear_bit if r0, r1, r2 aren't changed in delay or restored
+@   ldr r0, =#0x48000400
+@   mov r1, #0x14
+@   mov r2, #2
+@   bl clear_bit
+@   ldmia sp!, {r0-r4, lr}
+@   bx lr
+
+@ green_blink:
+@   @ str lr, [sp, #-4]!
+@   bl green_on
+@   bl delay
+@   bl green_off
+@   mov r2, #5
+@   @ ldr lr, [sp], #4
+@   b check_outofrange
+
+@ green_on:
+@   stmdb sp!, {r0-r4, lr}
+@   ldr r0, =#0x40021000
+@   mov r1, #0x4c
+@   mov r2, #4
+@   bl set_bit
+@   ldr r0, =#0x48001000
+@   mov r1, #0x0
+@   mov r2, #16
+@   bl set_bit
+@   mov r2, #17
+@   bl clear_bit
+@   mov r1, #0x14
+@   mov r2, #8
+@   bl set_bit
+@   ldmia sp!, {r0-r4, lr}
+@   bx lr
+
+@ green_off:
+@   stmdb sp!, {r0-r4, lr}
+@   ldr r0, =#0x48001000
+@   mov r1, #0x14
+@   mov r2, #8
+@   bl clear_bit
+@   ldmia sp!, {r0-r4, lr}
+@   bx lr 
+
+@ delay: 
+@   stmdb sp!, {r0, r1, lr}
+@   ldr r0, =#0x100000
+@   bl delay_loop
+@   ldmia sp!, {r0, r1, lr}
+@   bx lr
+
+@ delay_loop:
+@   str lr, [sp, #-4]!
+@ continue_loop:
+@   @ how to delay?
+@   sub r0, #1
+@   cmps r0, #0
+@   bgt continue_loop
+@   ble end_delay
+@ end_delay:
+@   ldr lr, [sp], #4
+@   bx lr
+
+@ set_bit:
+@   @ if it's leaf function doesn't need to remember lr actually
+@   str lr, [sp, #-4]! 
+@   ldr r4, [r0, r1]
+@   mov r3, #1
+@   lsl r3, r3, r2
+@   orr r4, r3
+@   str r4, [r0, r1]
+@   ldr lr, [sp], #4
+@   bx lr
+
+@ clear_bit:
+@   str lr, [sp, #-4]!
+@   ldr r3, [r0, r1]
+@   mov r4, #1
+@   lsl r4, r4, r2
+@   bic r3, r3, r4
+@   str r3, [r0, r1]
+@   ldr lr, [sp], #4
+@   bx lr
+
+@ loop:
+@   nop
+@   b loop
+@   @ ex6 ends here
+
+  @ extra: make it breathe?
+  @ turn the red on for longer time, turn it off for a shorter time?
+
+
+mov r3, #2      @ r3
+mov r1, #1000   @ r3:r1 to 100% of brightness
+mov r5, #3      @ every brightness duration loop cycles
+mov r7, #2      @ every step of r3 change (r3 = r3 + r7, r7 can < 0)
+
+start_here:
+
+@ args: r3:(r1-r3)=on:off to adjust brightness
+loop:
+  mov r0, r3
   bl red_on
-  bl green_on
   bl delay
+  mov r0, r3
+  sub r0, r1, r0
   bl red_off
-  bl green_off
-  mov r3, #15
-  b checkfizzred
+  bl delay
+  mov r0, r3
+  sub r5, #1
+  cmp r5, 0
+  bgt loop
+  ble change_brightness
 
-red_blink: 
-  @ str lr, [sp, #-4]!
-  bl red_on
-  bl delay
-  bl red_off
-  mov r1, #3
-  @ ldr lr, [sp], #4
-  b checkfizzgreen
+change_brightness:
+  add r3, r3, r7
+  cmp r3, r1
+  it eq
+  bleq reset_r7
+  cmp r3, #0
+  it eq
+  bleq reset_r7
+  mov r5, #2
+  
+  b start_here
+
+reset_r7:
+  @ if r3 reaches maximum r1 value, decrease r3 to 0;
+  @ if r3 reaches minimum 0, increase to r1
+  rsb r7, r7, #0
+  bx lr
+
+@ args: r0 delay operations ==> delay time
+delay:
+  sub r0, #1
+  cmps r0, #0
+  bgt delay
+  ble end_delay
+end_delay:
+  bx lr 
 
 red_on:
-  stmdb sp!, {r0-r4, lr}
+  stmdb sp!, {r0-r2, lr}
   ldr r0, =#0x40021000
   mov r1, #0x4c
   mov r2, #1
@@ -254,96 +416,36 @@ red_on:
   mov r1, #0x14
   mov r2, #2
   bl set_bit
-  ldmia sp!, {r0-r4, lr}
+  ldmia sp!, {r0-r2, lr}
   bx lr
 
 red_off:
-  stmdb sp!, {r0-r4, lr}
+  stmdb sp!, {r0-r2, lr}
   @ simplified to just clear_bit if r0, r1, r2 aren't changed in delay or restored
   ldr r0, =#0x48000400
   mov r1, #0x14
   mov r2, #2
   bl clear_bit
-  ldmia sp!, {r0-r4, lr}
-  bx lr
-
-green_blink:
-  @ str lr, [sp, #-4]!
-  bl green_on
-  bl delay
-  bl green_off
-  mov r2, #5
-  @ ldr lr, [sp], #4
-  b check_outofrange
-
-green_on:
-  stmdb sp!, {r0-r4, lr}
-  ldr r0, =#0x40021000
-  mov r1, #0x4c
-  mov r2, #4
-  bl set_bit
-  ldr r0, =#0x48001000
-  mov r1, #0x0
-  mov r2, #16
-  bl set_bit
-  mov r2, #17
-  bl clear_bit
-  mov r1, #0x14
-  mov r2, #8
-  bl set_bit
-  ldmia sp!, {r0-r4, lr}
-  bx lr
-
-green_off:
-  stmdb sp!, {r0-r4, lr}
-  ldr r0, =#0x48001000
-  mov r1, #0x14
-  mov r2, #8
-  bl clear_bit
-  ldmia sp!, {r0-r4, lr}
-  bx lr 
-
-delay: 
-  stmdb sp!, {r0, r1, lr}
-  ldr r0, =#0x100000
-  bl delay_loop
-  ldmia sp!, {r0, r1, lr}
-  bx lr
-
-delay_loop:
-  str lr, [sp, #-4]!
-continue_loop:
-  @ how to delay?
-  sub r0, #1
-  cmps r0, #0
-  bgt continue_loop
-  ble end_delay
-end_delay:
-  ldr lr, [sp], #4
+  ldmia sp!, {r0-r2, lr}
   bx lr
 
 set_bit:
   @ if it's leaf function doesn't need to remember lr actually
-  str lr, [sp, #-4]! 
+  stmdb sp!, {r0-r4, lr}
   ldr r4, [r0, r1]
   mov r3, #1
   lsl r3, r3, r2
   orr r4, r3
   str r4, [r0, r1]
-  ldr lr, [sp], #4
+  ldmia sp!, {r0-r4, lr}
   bx lr
 
 clear_bit:
-  str lr, [sp, #-4]!
+  stmdb sp!, {r0-r4, lr}
   ldr r3, [r0, r1]
   mov r4, #1
   lsl r4, r4, r2
   bic r3, r3, r4
   str r3, [r0, r1]
-  ldr lr, [sp], #4
+  ldmia sp!, {r0-r4, lr}
   bx lr
-
-loop:
-  nop
-  b loop
-  @ ex6 ends here
