@@ -1,6 +1,7 @@
 .syntax unified
 .global main
 .global SysTick_Handler
+.global EXTI0_IRQHandler
 
 .type main, %function
 main:
@@ -25,6 +26,8 @@ main:
   bl red_led_init
   bl green_led_init
 
+  bl joystick_init
+
 loop:
   b loop
 .size main, .-main
@@ -36,3 +39,15 @@ SysTick_Handler:
   pop {lr}
   bx lr
 .size SysTick_Handler, .-SysTick_Handler
+
+.type EXTI0_IRQHandler, %function
+EXTI0_IRQHandler:
+  push {lr}
+  bl green_led_toggle
+  ldr r0, =0x40010400
+  ldr r1, =0x14
+  mov r2, 0
+  bl set_bit
+  pop {lr}
+  bx lr
+.size EXTI0_IRQHandler, .-EXTI0_IRQHandler
