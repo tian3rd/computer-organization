@@ -28,16 +28,41 @@ main:
 
   bl joystick_init
 
+  @ ex4 set priorities
+  @ set SysTick priority to 8 (31st)
+  ldr r0, =0xe000ed00
+  ldr r1, =0x20
+  mov r2, 31
+  bl set_bit
+
+  @ set EXTI0 priority to 1 (ensure that it's higher than Systick) (20th)
+  ldr r0, =0xe000e100
+  ldr r1, =0x304
+  mov r2, 20
+  bl set_bit
+
+
 loop:
   b loop
 .size main, .-main
 
+@ @ ex1-3 customized SysTick_Handler
+@ .type SysTick_Handler, %function
+@ SysTick_Handler:
+@   push {lr}
+@   bl red_led_toggle
+@   pop {lr}
+@   bx lr
+@ .size SysTick_Handler, .-SysTick_Handler
+
+@ ex4 infinite loop in SysTick_Handler
 .type SysTick_Handler, %function
 SysTick_Handler:
   push {lr}
-  bl red_led_toggle
-  pop {lr}
-  bx lr
+  bl red_led_on
+SysTick_Handler_infloop:
+  nop
+  b SysTick_Handler_infloop
 .size SysTick_Handler, .-SysTick_Handler
 
 .type EXTI0_IRQHandler, %function
