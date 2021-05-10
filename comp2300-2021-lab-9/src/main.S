@@ -27,20 +27,20 @@ main:
   bl red_led_init
   bl green_led_init
 
-  @ bl joystick_init
+  bl joystick_init
 
-  @ @ ex4 set priorities
-  @ @ set SysTick priority to 8 (31st)
-  @ ldr r0, =0xe000ed00
-  @ ldr r1, =0x20
-  @ mov r2, 31
-  @ bl set_bit
+  @ ex4 set priorities
+  @ set SysTick priority to 8 (31st)
+  ldr r0, =0xe000ed00
+  ldr r1, =0x20
+  mov r2, 31
+  bl set_bit
 
-  @ @ set EXTI0 priority to 1 (ensure that it's higher than Systick) (20th)
-  @ ldr r0, =0xe000e100
-  @ ldr r1, =0x304
-  @ mov r2, 20
-  @ bl set_bit
+  @ set EXTI0 priority to 1 (ensure that it's higher than Systick) (20th)
+  ldr r0, =0xe000e100
+  ldr r1, =0x304
+  mov r2, 20
+  bl set_bit
 
   @ ex5
 
@@ -71,12 +71,21 @@ loop:
 SysTick_Handler:
   push {lr}
   @ clear EXTI and NVIC interrupt pending bits before enabling EXTI interrupt
-  @ @ clear EXTI_PR1
-  @ ldr r0, =0x40010400
-  @ ldr r1, =0x14
-  @ mov r2, 0
-  @ bl set_bit 
-  @ clear NVIC interrupt
+  @ clear EXTI_PR1
+  ldr r0, =0x40010400
+  ldr r1, =0x14
+  mov r2, 0
+  bl set_bit 
+  @ clear NVIC interrupt NVIC_ICER0
+  ldr r0, =0xe000e100
+  ldr r1, =0x80
+  mov r2, 6
+  bl set_bit
+  @ clear NVIC interrupt NVIC_ICPR0
+  ldr r0, =0xe000e100
+  ldr r1, =0x180
+  mov r2, 6
+  bl set_bit
 
   @ enable the joystick interrupt
   ldr r0, =0xe000e100
