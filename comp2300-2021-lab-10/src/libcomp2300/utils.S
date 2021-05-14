@@ -37,6 +37,8 @@ NVIC_IPR_set_priority:
   lsl r3, 3
   add r3, 4
 
+  @ should be 0x400 instead of 300?
+  @ ldr r0, =(ADR_NVIC + 0x400)
   ldr r0, =(ADR_NVIC + 0x300)
   add r0, r2
   mov r2, r3
