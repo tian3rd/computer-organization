@@ -3,6 +3,8 @@
 .include "src/libcomp2300/macros.S"
 .global EXTI0_IRQHandler
 .global EXTI1_IRQHandler
+@ B7 corresponds to NVIC 9_5 handler
+.global EXTI9_5_IRQHandler
 
 .type main, %function
 main:
@@ -44,78 +46,150 @@ main:
 @ end_poll:
 @   b poll_gpio
 
-  @ ex2. let's do it again, this time using interrupts
-  @ ex2 starts here
-  @ before enabling and configuring interrupts, enable System Configuration Controller SYSCFG to modify the sys config
-  @ enable SYSCFG clock
-  RCC_APB2ENR_set 0
-  @ _it enable interrupt - center
-  GPIO_configure_input_pin_it A, 0
-  EXTI_set_rising_edge_trigger 0
-  EXTI_set_falling_edge_trigger 0
-  @ - left
-  GPIO_configure_input_pin_it A, 1
-  EXTI_set_rising_edge_trigger 1
-  EXTI_set_falling_edge_trigger 1
+  @ @ commented out for ex3
+  @ @ ex2. let's do it again, this time using interrupts
+  @ @ ex2 starts here
+  @ @ before enabling and configuring interrupts, enable System Configuration Controller SYSCFG to modify the sys config
+  @ @ enable SYSCFG clock
+  @ RCC_APB2ENR_set 0
+  @ @ _it enable interrupt - center
+  @ GPIO_configure_input_pin_it A, 0
+  @ EXTI_set_rising_edge_trigger 0
+  @ EXTI_set_falling_edge_trigger 0
+  @ @ - left
+  @ GPIO_configure_input_pin_it A, 1
+  @ EXTI_set_rising_edge_trigger 1
+  @ EXTI_set_falling_edge_trigger 1
 
-  @ enable NVIC interrupt position 6 - EXTI0
+  @ @ enable NVIC interrupt position 6 - EXTI0
+  @ NVIC_set ISER 6
+  @ @ position - EXTI1
+  @ NVIC_set ISER 7
+
+  @ ex3. click-over-the-wire
+  @ ex3 starts here. jumper cable to connect pin PB7 to PE13
+  @ enable SYSCFG clock
+  RCC_APB2ENR_set 0 
+  @ for joystick as well to get input signal
+  GPIO_configure_input_pin_it A, 0
+  @ 0 - 1 triggers (push-down)
+  EXTI_set_rising_edge_trigger 0
+  @ 1 - 0 triggers (release)
+  EXTI_set_falling_edge_trigger 0
+  @ configure output pin as a GPIO output, say E13 for this example
+  GPIO_configure_output_pin E, 13
+  @ configure input pin as an interrupt-enabled GPIO input
+  GPIO_configure_input_pin_it B, 7
+  @ only one edge is enabled because joystick pushdown and release will send the trigger twice (rising and falling edge), so if we set both for B7 as well, then as soon as we release the joystick, it triggers again, causing the led to turn off
+  EXTI_set_rising_edge_trigger 7
+  @ EXTI_set_falling_edge_trigger 7
+
+  @ enable NVIC interrupt 
+  @ exti0 for joystick at position 6. refer to p321 section 11.3 of the discoboard manual
   NVIC_set ISER 6
-  @ position - EXTI1
-  NVIC_set ISER 7
+  @ exti9_5 for b7 at position 23.
+  NVIC_set ISER 23
+
+  @ @ the following setting priority is not necessary for ex3
+  @ @ set EXTI0 priority to 8
+  @ ldr r0, =0xe000e100
+  @ ldr r1, =0x304
+  @ mov r2, 23
+  @ bl set_bit
+
+  @ @ set EXTI7 priority to 1 (ensure that it's higher than Systick) (20th)
+  @ @ ldr r0, =0xe000e100
+  @ @ ldr r1, =0x314
+  @ @ mov r2, 28
+  @ @ bl set_bit
+  @ @ use the function in util.S
+  @ mov r0, 23
+  @ mov r1, 0x3
+  @ bl NVIC_IPR_set_priority
+
+@ infinite loop to keep the discord running  
 loop:
   nop
   b loop
   b main
 .size main, .-main
 
-@ for central joystick
+@ exti0 triggers when joystick is pressed and released. 
+@ when this handler executes, it toggles the E13 value to send out a signal.
+@ because E13 is connected to b7 via jumper wire, then for rising edge, it triggers b7 handler (which is 9_5_handler)
 .type EXTI0_IRQHandler, %function
 EXTI0_IRQHandler:
-  push {r4, lr}
-  mov r4, 1
-blink_red:
-  cmp r4, 1
-  beq turn_red_on
-  bne turn_red_off
-turn_red_on:
-  GPIOx_ODR_set B, 2
-  b delay_next
-turn_red_off:
-  GPIOx_ODR_clear B, 2
-  b delay_next
-delay_next:
-  rsb r4, r4, 1
-  ldr r0, =1000000 
-  bl delay
-  b blink_red
-  @ clear EXTI_PR1
-  EXTI_PR_clear_pending 1
-  pop {r4, lr}
+  push {lr}
+  GPIOx_ODR_toggle E, 13
+  @ clear pending for EXTIn, e.g. EXTI0 should clear 0, EXTI3 should clear 3 after handling the interrupt. This ensures that EXTI controller knows when it's finished handling the interrupt from nth handler.
+  EXTI_PR_clear_pending 0
+  pop {lr}
   bx lr
 .size EXTI0_IRQHandler, .-EXTI0_IRQHandler
 
-@ for left joystick
-.type EXTI1_IRQHandler, %function
-EXTI1_IRQHandler:
-  push {r4, lr}
-  mov r4, 1
-blink_green:
-  cmp r4, 1
-  beq turn_green_on
-  bne turn_green_off
-turn_green_on:
-  GPIOx_ODR_set E, 8
-  b delay_next_short
-turn_green_off:
-  GPIOx_ODR_clear E, 8
-  b delay_next_short
-delay_next_short:
-  rsb r4, r4, 1
-  ldr r0, =500000 
-  bl delay
-  b blink_green
-  @ clear EXTI_PR1
-  EXTI_PR_clear_pending 1
-  pop {r4, lr}
+.type EXTI9_5_IRQHandler, %function
+EXTI9_5_IRQHandler:
+  push {lr}
+  @ toggle red and green led (b2 and e8 ports)
+  GPIOx_ODR_toggle B, 2
+  GPIOx_ODR_toggle E, 8
+  @ clear pending. tell controller it's finished handler B7 interrupt
+  EXTI_PR_clear_pending 7
+  pop {lr}
   bx lr
-.size EXTI1_IRQHandler, .-EXTI1_IRQHandler
+.size EXTI9_5_IRQHandler, .-EXTI9_5_IRQHandler
+@ ex3 ---
+
+@ @ ex2 ---
+@ @ for central joystick
+@ .type EXTI0_IRQHandler, %function
+@ EXTI0_IRQHandler:
+@   push {r4, lr}
+@   mov r4, 1
+@ blink_red:
+@   cmp r4, 1
+@   beq turn_red_on
+@   bne turn_red_off
+@ turn_red_on:
+@   GPIOx_ODR_set B, 2
+@   b delay_next
+@ turn_red_off:
+@   GPIOx_ODR_clear B, 2
+@   b delay_next
+@ delay_next:
+@   rsb r4, r4, 1
+@   ldr r0, =1000000 
+@   bl delay
+@   b blink_red
+@   @ clear EXTI_PR1
+@   EXTI_PR_clear_pending 1
+@   pop {r4, lr}
+@   bx lr
+@ .size EXTI0_IRQHandler, .-EXTI0_IRQHandler
+
+@ @ for left joystick
+@ .type EXTI1_IRQHandler, %function
+@ EXTI1_IRQHandler:
+@   push {r4, lr}
+@   mov r4, 1
+@ blink_green:
+@   cmp r4, 1
+@   beq turn_green_on
+@   bne turn_green_off
+@ turn_green_on:
+@   GPIOx_ODR_set E, 8
+@   b delay_next_short
+@ turn_green_off:
+@   GPIOx_ODR_clear E, 8
+@   b delay_next_short
+@ delay_next_short:
+@   rsb r4, r4, 1
+@   ldr r0, =500000 
+@   bl delay
+@   b blink_green
+@   @ clear EXTI_PR1
+@   EXTI_PR_clear_pending 1
+@   pop {r4, lr}
+@   bx lr
+@ .size EXTI1_IRQHandler, .-EXTI1_IRQHandler
+@ @ ex2 ---
